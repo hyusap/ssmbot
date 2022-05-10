@@ -1,8 +1,23 @@
 {
   "name": "ssmbot",
   "version": "1.0.0",
-  "description": "A simple bot",
+  "description": "a simple bot",
   "main": "index.js",
-  "author": "ayush",
-  "license": "MIT"
+  "repository": "https://github.com/citricacid2/ssmbot.git",
+  "author": "citricacid2 <61765149+citricacid2@users.noreply.github.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@discordjs/builders": "^0.13.0",
+    "@discordjs/rest": "^0.4.1",
+    "discord-api-types": "^0.32.1",
+    "discord.js": "^13.6.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0"
+  },
+  "scripts": {
+    "register": "node deploy-commands.js",
+    "start": "node index.js"
+  }
 }
