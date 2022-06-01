@@ -4,7 +4,8 @@ module.exports = {
 	name: 'messageCreate',
 	async execute(client, message) {
         if (message.channel.type !== "DM" || message.author.bot) return;
-  
+        
+        // load server and channel, this error handing is annoying af
         const server = await client.guilds.fetch(process.env.SERVER_ID)
           .catch(() => console.error('Couldn\'t fetch server, check SERVER_ID in .env'));
         if (!server) return;
