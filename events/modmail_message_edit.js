@@ -31,7 +31,7 @@ module.exports = {
         // Just ignore the edit if the edit makes the message too long
         const descriptionSize = newModmailEmbed.description.length;
         if (descriptionSize > 4096) {
-            await newMessage.author.send(`Your message is too long to edit. Please send a new message.`);
+            await newMessage.author.send(`Your message is too long to edit, and has not been added into the modmail. Please send a new message instead.`);
             return;
         }
 
