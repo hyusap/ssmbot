@@ -1,5 +1,5 @@
 const constants = {
-    STATUS_CONTENT: "over modmail"
+    STATUS_CONTENT: "over your modmail"
 }
 
 module.exports = {
@@ -8,6 +8,6 @@ module.exports = {
     execute(client) {
         client.user.setActivity({ name: constants.STATUS_CONTENT, type: 'WATCHING' });
 
-        console.log("I am groot.");
+        console.log("Bot up and running!");
     },
 };
