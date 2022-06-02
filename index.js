@@ -3,6 +3,9 @@ const path = require('node:path');
 const { Client, Collection, Intents } = require('discord.js');
 require("dotenv").config();
 
+// Map's user ID to the active modmail ID and embed if there is one
+const activeMessages = new Map();
+
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_MESSAGES], partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 client.commands = new Collection();
 
@@ -24,14 +27,22 @@ for (const file of eventFiles) {
   const filePath = path.join(eventsPath, file);
   const event = require(filePath);
   if (event.once) {
-    client.once(event.name, (...args) => event.execute(...args));
+    client.once(event.name, (...args) => event.execute(client, ...args));
   } else {
-    client.on(event.name, (...args) => event.execute(client, ...args));
+    client.on(event.name, (...args) => event.execute(client, activeMessages, ...args));
   }
 }
 
 client.on('interactionCreate', async interaction => {
   console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered an interaction.`);
+
+  if (interaction.isButton()) {
+    interaction.reply({ content: 'Modmail message has been sent!.', ephemeral: true });
+    activeMessages.delete(interaction.user.id);
+
+    return;
+  }
+
   if (!interaction.isCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
