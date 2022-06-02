@@ -1,4 +1,4 @@
-const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
+const { MessageEmbed } = require('discord.js');
 
 module.exports = {
     name: 'messageUpdate',
@@ -30,10 +30,15 @@ module.exports = {
 
         // Just ignore the edit if the edit makes the message too long
         const descriptionSize = newModmailEmbed.description.length;
-        if (descriptionSize > 4096)
+        if (descriptionSize > 4096) {
+            await newMessage.author.send(`Your message is too long to edit. Please send a new message.`);
             return;
+        }
 
         await modmailMessage.edit({ embeds: [newModmailEmbed] });
         await previewMessage.edit({ embeds: [newPreviewEmbed] });
+
+        // lint
+        console.log(_)
     }
 };

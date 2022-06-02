@@ -1,6 +1,5 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const wait = require('node:timers/promises').setTimeout;
 const { Client, Collection, Intents } = require('discord.js');
 require("dotenv").config();
 
