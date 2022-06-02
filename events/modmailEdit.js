@@ -37,7 +37,7 @@ module.exports = {
             .setDescription(previewEmbed.description.replace(oldMessage.content, newMessage.content))
             .setTimestamp();
 
-        // Just ignore the edit if the edit makes the message too long
+        // Warn about edit if it makes message too long
         const descriptionSize = newModmailEmbed.description.length;
         if (descriptionSize > 4096) {
             await newMessage.reply({ embeds: [constants.EDIT_TOO_LONG] });
