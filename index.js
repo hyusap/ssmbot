@@ -26,8 +26,7 @@ for (const file of eventFiles) {
   if (event.once) {
     client.once(event.name, (...args) => event.execute(...args));
   } else {
-    console.log(event)
-    client.on(event.name, (...args) => event.execute(...args));
+    client.on(event.name, (...args) => event.execute(client, ...args));
   }
 }
 
@@ -44,13 +43,6 @@ client.on('interactionCreate', async interaction => {
   } catch (error) {
     console.error(error);
     await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-  }
-});
-
-client.on('messageCreate', async message => {
-  if (message.channel.type == "DM" && !message.author.bot) {
-    (await client.channels.fetch(process.env.CHANNEL_ID)).send(message.content);
-    return;
   }
 });
 
