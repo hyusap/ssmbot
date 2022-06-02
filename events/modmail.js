@@ -24,6 +24,12 @@ const constants = {
 
     FINALIZE_BUTTON_TEXT: "Finalize Modmail",
     DELETE_BUTTON_TEXT: "Delete Modmail",
+
+    MODMAIL_FAILED: new MessageEmbed()
+        .setColor("#ff0000")
+        .setTitle("Modmail Failed")
+        .setDescription("Something went wrong when sending the modmail. Please try again later.")
+        .setTimestamp(),
 }
 
 module.exports = {
@@ -77,6 +83,7 @@ module.exports = {
                 }
             } catch (error) {
                 console.error(error);
+                await message.channel.send(constants.MODMAIL_FAILED);
             }
         }
 
