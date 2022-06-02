@@ -1,7 +1,22 @@
+const { MessageEmbed } = require("discord.js");
+
 const constants = {
-    MODMAIL_SENT: "Your modmail entry has been sent!",
-    COMMAND_ERROR: "Your command could not be executed. Please try again later.",
-    COMMAND_NOT_FOUND: "The command you entered could not be found. Please try a different command.",
+    MODMAIL_SENT: new MessageEmbed()
+        .setTitle("Your modmail entry has been sent!")
+        .setColor("#00ff00")
+        .setTimestamp(),
+
+    COMMAND_ERROR: new MessageEmbed()
+        .setTitle("Something went wrong!")
+        .setColor("#ff0000")
+        .setDescription("Your command could not be executed. Please try again later.")
+        .setTimestamp(),
+
+    COMMAND_NOT_FOUND: new MessageEmbed()
+        .setTitle("Something went wrong!")
+        .setColor("#ff0000")
+        .setDescription("The command you entered could not be found. Please try a different command.")
+        .setTimestamp(),
 }
 
 module.exports = {
@@ -13,7 +28,7 @@ module.exports = {
             // disable the button
             await interaction.deferUpdate();
             await interaction.editReply({ components: [], ephemeral: true });
-            await interaction.followUp(constants.MODMAIL_SENT);
+            await interaction.followUp({ embeds: [constants.MODMAIL_SENT] });
 
             return;
         }
@@ -23,7 +38,7 @@ module.exports = {
         const command = client.commands.get(interaction.commandName);
 
         if (!command) {
-            await interaction.reply(constants.COMMAND_NOT_FOUND);
+            await interaction.reply({ embeds: [constants.COMMAND_NOT_FOUND] });
             return;
         }
 
@@ -31,7 +46,7 @@ module.exports = {
             await command.execute(interaction);
         } catch (error) {
             console.error(error);
-            await interaction.reply(constants.COMMAND_ERROR, { ephemeral: true });
+            await interaction.reply({ embeds: [constants.COMMAND_ERROR], ephemeral: true });
         }
     },
 };
