@@ -1,8 +1,8 @@
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
 module.exports = {
-	name: 'messageUpdate',
-	async execute(client, activeMessages, oldMessage, newMessage) {
+    name: 'messageUpdate',
+    async execute(client, activeMessages, oldMessage, newMessage) {
         if (oldMessage.channel.type !== "DM" || oldMessage.author.bot) return;
 
         // return if the a modmail is not active for this user
@@ -23,7 +23,7 @@ module.exports = {
         const newModmailEmbed = new MessageEmbed(modmailEmbed)
             .setDescription(modmailEmbed.description.replace(oldMessage.content, newMessage.content))
             .setTimestamp();
-        
+
         const newPreviewEmbed = new MessageEmbed(previewEmbed)
             .setDescription(previewEmbed.description.replace(oldMessage.content, newMessage.content))
             .setTimestamp();
