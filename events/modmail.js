@@ -2,6 +2,28 @@ const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
 const timeoutMillseconds = process.env.TIMEOUT_MINUTES * 60 * 1000;
 
+const constants = {
+    NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
+    NO_GUILD_FETCH: "Couldn't fetch server, check value of SERVER_ID in .env",
+
+    INSTRUCTIONS_COLOR: "#eeff00",
+    INSTRUCTIONS_TITLE: "Modmail Instructions",
+    INSTRUCTIONS_BODY: `Your message has just been sent to the server moderators. If you have additional details, just keep sending messages in this DM.
+
+    A preview embed of what is being sent to the mods will be sent to you. Both sending more messages and editing your existing messages will update the preview.
+    
+    If your message becomes more than 4096 characters long, it will be split into multiple messages and a new preview embed will be sent.
+    
+    To finalize the modmail, just press the "Finalize Modmail" button at the bottom of the preview embeds.
+    
+    Note: if you edit a message, and the modmail content exceeds 4096 characters, the change will not be made.`,
+
+    MESSAGE_COLOR: "#00ffff",
+    MESSAGE_TITLE: "Modmail Message",
+
+    BUTTON_TEXT: "Finalize Modmail",
+}
+
 module.exports = {
     name: 'messageCreate',
     async execute(client, activeMessages, message) {
@@ -10,11 +32,20 @@ module.exports = {
         // Message part for splitting
         let messagePart = 0;
 
-        // load channel, annoying error handling
+        // load channel, server, and author -- annoying error handling
         const modmailChannel = await client.channels.fetch(process.env.CHANNEL_ID)
-            .catch(() => console.error('Couldn\'t fetch channel, check CHANNEL_ID in .env'));
+            .catch(() => console.error(constants.NO_CHANNEL_FETCH));
         if (!modmailChannel) return;
 
+        const server = await client.guilds.fetch(process.env.SERVER_ID)
+            .catch(() => console.error(constants.NO_GUILD_FETCH));
+        if (!server) return;
+
+        const author = await server.members.fetch({ user: message.author.id, force: true })
+            .catch(() => { });
+        if (!author) return;
+
+        // Create new modmail ticket if author is present
         if (activeMessages.has(message.author.id)) {
             try {
                 const [messageId, previewId, part] = activeMessages.get(message.author.id);
@@ -49,29 +80,12 @@ module.exports = {
 
         if (!activeMessages.has(message.author.id)) {
             const instructionsEmbed = new MessageEmbed()
-                .setColor('#006eff')
-                .setTitle('How to use Modmail')
-                .setDescription(
-                    `To send a modmail, just keep sending messages in this DM.
-A preview embed of what is being sent to the mods will be sent to you, and sending more messages will update the preview.
-You may also edit messages which you have already sent.
-
-if your message becomes more than 4096 characters long, it will be split into multiple messages and a new preview embed will be sent.
-
-To finalilze the modmail, just press the \`Finalize Modmail\` button one of the preview embeds.`
-                );
+                .setColor(constants.INSTRUCTIONS_COLOR)
+                .setTitle(constants.INSTRUCTIONS_TITLE)
+                .setDescription(constants.INSTRUCTIONS_BODY);
 
             await message.channel.send({ embeds: [instructionsEmbed] });
         }
-
-        // load server and author, this error handing is annoying af
-        const server = await client.guilds.fetch(process.env.SERVER_ID)
-            .catch(() => console.error('Couldn\'t fetch server, check SERVER_ID in .env'));
-        if (!server) return;
-
-        const author = await server.members.fetch({ user: message.author.id, force: true })
-            .catch(() => { });
-        if (!author) return;
 
         // Set author title to include part if applicable
         let authorTitle = author.nickname || author.user.username;
@@ -81,8 +95,8 @@ To finalilze the modmail, just press the \`Finalize Modmail\` button one of the 
         const authorIcon = author.user.avatarURL({ dynamic: true });
 
         const modmailEmbed = new MessageEmbed()
-            .setColor('#0099ff')
-            .setTitle('Modmail Message')
+            .setColor(constants.MESSAGE_COLOR)
+            .setTitle(constants.MESSAGE_TITLE)
             .setAuthor({ name: authorTitle, iconURL: authorIcon })
             .setDescription(message.content)
             .setTimestamp();
@@ -90,11 +104,11 @@ To finalilze the modmail, just press the \`Finalize Modmail\` button one of the 
         const modmailMessage = await modmailChannel.send({ embeds: [modmailEmbed] });
 
         const preview = new MessageEmbed(modmailEmbed)
-            .setTitle('Modmail Message Preview')
+            .setTitle(constants.MESSAGE_TITLE + " Preview")
             .setDescription(message.content);
 
         const sendButton = new MessageButton()
-            .setLabel('Finalize Modmail')
+            .setLabel(constants.BUTTON_TEXT)
             .setStyle('PRIMARY')
             .setCustomId('finalize-modmail');
 

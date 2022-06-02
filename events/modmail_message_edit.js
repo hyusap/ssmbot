@@ -1,5 +1,10 @@
 const { MessageEmbed } = require('discord.js');
 
+const constants = {
+    NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
+    EDIT_TOO_LONG: "Your message is too long to edit, and has not been added into the modmail. Please send a new message instead."
+}
+
 module.exports = {
     name: 'messageUpdate',
     async execute(client, activeMessages, oldMessage, newMessage) {
@@ -10,7 +15,7 @@ module.exports = {
 
         // load channel, annoying error handling
         const modmailChannel = await client.channels.fetch(process.env.CHANNEL_ID)
-            .catch(() => console.error('Couldn\'t fetch channel, check CHANNEL_ID in .env'));
+            .catch(() => console.error(constants.NO_CHANNEL_FETCH));
         if (!modmailChannel) return;
 
         // eslint-disable-next-line no-unused-vars
@@ -32,7 +37,7 @@ module.exports = {
         // Just ignore the edit if the edit makes the message too long
         const descriptionSize = newModmailEmbed.description.length;
         if (descriptionSize > 4096) {
-            await newMessage.author.send(`Your message is too long to edit, and has not been added into the modmail. Please send a new message instead.`);
+            await newMessage.author.send(constants.EDIT_TOO_LONG);
             return;
         }
 
