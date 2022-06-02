@@ -6,17 +6,18 @@ const constants = {
     NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
     NO_GUILD_FETCH: "Couldn't fetch server, check value of SERVER_ID in .env",
 
-    INSTRUCTIONS_COLOR: "#eeff00",
-    INSTRUCTIONS_TITLE: "Modmail Instructions",
-    INSTRUCTIONS_BODY: `Your message has just been sent to the server moderators. If you have additional details, just keep sending messages in this DM.
+    INSTRUCTIONS: new MessageEmbed()
+        .setColor("#eeff00")
+        .setTitle("Modmail Instructions")
+        .setDescription(`Your message has just been sent to the server moderators. If you have additional details, just keep sending messages in this DM.
 
-    A preview embed of what is being sent to the mods will be sent to you. Both sending more messages and editing your existing messages will update the preview.
-    
-    If your message becomes more than 4096 characters long, it will be split into multiple messages and a new preview embed will be sent.
-    
-    To finalize the modmail, just press the "Finalize Modmail" button at the bottom of the preview embeds.
-    
-    Note: if you edit a message, and the modmail content exceeds 4096 characters, the change will not be made.`,
+                        A preview embed of what is being sent to the mods will be sent to you. Both sending more messages and editing your existing messages will update the preview.
+                        
+                        If your message becomes more than 4096 characters long, it will be split into multiple messages and a new preview embed will be sent.
+                        
+                        To finalize the modmail, just press the "Finalize Modmail" button at the bottom of the preview embeds.
+                        
+                        Note: if you edit a message, and the modmail content exceeds 4096 characters, the change will not be made.`),
 
     MESSAGE_COLOR: "#00ffff",
     MESSAGE_TITLE: "Modmail Message",
@@ -79,12 +80,7 @@ module.exports = {
         }
 
         if (!activeMessages.has(message.author.id)) {
-            const instructionsEmbed = new MessageEmbed()
-                .setColor(constants.INSTRUCTIONS_COLOR)
-                .setTitle(constants.INSTRUCTIONS_TITLE)
-                .setDescription(constants.INSTRUCTIONS_BODY);
-
-            await message.channel.send({ embeds: [instructionsEmbed] });
+            await message.channel.send({ embeds: [constants.INSTRUCTIONS] });
         }
 
         // Set author title to include part if applicable
