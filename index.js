@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const wait = require('node:timers/promises').setTimeout;
 const { Client, Collection, Intents } = require('discord.js');
 require("dotenv").config();
 
@@ -37,8 +38,12 @@ client.on('interactionCreate', async interaction => {
   console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered an interaction.`);
 
   if (interaction.isButton()) {
-    interaction.reply({ content: 'Modmail message has been sent!.', ephemeral: true });
     activeMessages.delete(interaction.user.id);
+
+    // disable the button
+    await interaction.deferUpdate();
+    await interaction.editReply({ components: [], ephemeral: true });
+    await interaction.followUp({ content: 'Modmail message has been sent!', ephemeral: true });
 
     return;
   }
