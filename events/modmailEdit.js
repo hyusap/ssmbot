@@ -1,8 +1,16 @@
-const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
+const { MessageEmbed } = require('discord.js');
+
+const constants = {
+    NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
+    EDIT_TOO_LONG: new MessageEmbed()
+        .setColor("#ff0000")
+        .setTitle("Edited message exceeds length limit!")
+        .setDescription("Your edited message is too long, and has not been added into the modmail. Please send a new message instead."),
+}
 
 module.exports = {
-	name: 'messageUpdate',
-	async execute(client, activeMessages, oldMessage, newMessage) {
+    name: 'messageUpdate',
+    async execute(client, activeMessages, oldMessage, newMessage) {
         if (oldMessage.channel.type !== "DM" || oldMessage.author.bot) return;
 
         // return if the a modmail is not active for this user
@@ -10,9 +18,10 @@ module.exports = {
 
         // load channel, annoying error handling
         const modmailChannel = await client.channels.fetch(process.env.CHANNEL_ID)
-            .catch(() => console.error('Couldn\'t fetch channel, check CHANNEL_ID in .env'));
+            .catch(() => console.error(constants.NO_CHANNEL_FETCH));
         if (!modmailChannel) return;
 
+        // eslint-disable-next-line no-unused-vars
         const [messageId, previewId, _] = activeMessages.get(oldMessage.author.id);
         const modmailMessage = await modmailChannel.messages.fetch(messageId);
         const modmailEmbed = modmailMessage.embeds[0];
@@ -23,15 +32,17 @@ module.exports = {
         const newModmailEmbed = new MessageEmbed(modmailEmbed)
             .setDescription(modmailEmbed.description.replace(oldMessage.content, newMessage.content))
             .setTimestamp();
-        
+
         const newPreviewEmbed = new MessageEmbed(previewEmbed)
             .setDescription(previewEmbed.description.replace(oldMessage.content, newMessage.content))
             .setTimestamp();
 
-        // Just ignore the edit if the edit makes the message too long
+        // Warn about edit if it makes message too long
         const descriptionSize = newModmailEmbed.description.length;
-        if (descriptionSize > 4096)
+        if (descriptionSize > 4096) {
+            await newMessage.reply({ embeds: [constants.EDIT_TOO_LONG] });
             return;
+        }
 
         await modmailMessage.edit({ embeds: [newModmailEmbed] });
         await previewMessage.edit({ embeds: [newPreviewEmbed] });
