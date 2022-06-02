@@ -22,7 +22,8 @@ const constants = {
     MESSAGE_COLOR: "#00ffff",
     MESSAGE_TITLE: "Modmail Message",
 
-    BUTTON_TEXT: "Finalize Modmail",
+    FINALIZE_BUTTON_TEXT: "Finalize Modmail",
+    DELETE_BUTTON_TEXT: "Delete Modmail",
 }
 
 module.exports = {
@@ -104,12 +105,18 @@ module.exports = {
             .setDescription(message.content);
 
         const sendButton = new MessageButton()
-            .setLabel(constants.BUTTON_TEXT)
+            .setLabel(constants.FINALIZE_BUTTON_TEXT)
             .setStyle('PRIMARY')
             .setCustomId('finalize-modmail');
 
+        const deleteButton = new MessageButton()
+            .setLabel(constants.DELETE_BUTTON_TEXT)
+            .setStyle('DANGER')
+            .setCustomId('delete-modmail');
+
         const buttonRow = new MessageActionRow()
-            .addComponents(sendButton);
+            .addComponents(sendButton)
+            .addComponents(deleteButton);
 
         const previewMessage = await message.channel.send({ embeds: [preview], components: [buttonRow] });
 
