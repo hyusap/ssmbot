@@ -1,23 +1,25 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
 const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
+const fs = require('node:fs');
 require("dotenv").config();
 
-const commands = [
-  new SlashCommandBuilder()
-    .setName("ping")
-    .setDescription("Replies with pong!"),
-].map((command) => command.toJSON());
+const commands = []
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
+for (const file of commandFiles) {
+	const command = require(`./commands/${file}`);
+	commands.push(command.data.toJSON());
+}
 
 const rest = new REST({ version: "9" }).setToken(process.env.TOKEN);
 
 rest
-  .put(
-    Routes.applicationGuildCommands(
-      process.env.CLIENT_ID,
-      process.env.GUILD_ID
-    ),
-    { body: commands }
-  )
-  .then(() => console.log("Successfully registered application commands."))
-  .catch(console.error);
+    .put(
+        Routes.applicationGuildCommands(
+            process.env.CLIENT_ID,
+            process.env.SERVER_ID
+        ),
+        { body: commands }
+    )
+    .then(() => console.log("Successfully registered application commands."))
+    .catch(console.error);
