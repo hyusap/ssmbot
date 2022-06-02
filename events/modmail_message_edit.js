@@ -13,6 +13,7 @@ module.exports = {
             .catch(() => console.error('Couldn\'t fetch channel, check CHANNEL_ID in .env'));
         if (!modmailChannel) return;
 
+        // eslint-disable-next-line no-unused-vars
         const [messageId, previewId, _] = activeMessages.get(oldMessage.author.id);
         const modmailMessage = await modmailChannel.messages.fetch(messageId);
         const modmailEmbed = modmailMessage.embeds[0];
@@ -37,8 +38,5 @@ module.exports = {
 
         await modmailMessage.edit({ embeds: [newModmailEmbed] });
         await previewMessage.edit({ embeds: [newPreviewEmbed] });
-
-        // lint
-        console.log(_)
     }
 };
