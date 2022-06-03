@@ -26,6 +26,7 @@ module.exports = {
         const previewMessage = await message.channel.messages.fetch(previewId);
         const previewEmbed = previewMessage.embeds[0];
 
+        // maybe update char count here? idk if it's worth it though
         const newPreviewEmbed = new MessageEmbed(previewEmbed)
             .setDescription(previewContent(newModmailContent))
             .setTimestamp();

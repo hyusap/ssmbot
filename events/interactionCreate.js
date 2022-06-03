@@ -35,16 +35,16 @@ module.exports = {
     name: 'interactionCreate',
     async execute(client, activeMessages, interaction) {
         if (interaction.isButton()) {
+            // check that the modmail is still active
+            if (!activeMessages.has(interaction.user.id)) {
+                await interaction.deferUpdate();
+                await interaction.editReply({ components: [], ephemeral: true });
+                await interaction.followUp({ embeds: [constants.COMMAND_ERROR] });
+
+                return;
+            }
+
             if (interaction.customId === "send-modmail") {
-                // check that the modmail is still active
-                if (!activeMessages.has(interaction.user.id)) {
-                    await interaction.deferUpdate();
-                    await interaction.editReply({ components: [], ephemeral: true });
-                    await interaction.followUp({ embeds: [constants.COMMAND_ERROR] });
-
-                    return;
-                }
-
                 // load message content and preview
                 const { modmailContent, previewId, timeoutHandle } = activeMessages.get(interaction.user.id);
                 const previewMessage = await interaction.channel.messages.fetch(previewId);
@@ -61,6 +61,7 @@ module.exports = {
                     return new MessageEmbed(previewEmbed)
                         .setTitle(authorTitle)
                         .setDescription(chunk)
+                        .setFooter({ text: `${chunk.length} characters.` })
                         .setTimestamp();
                 });
 

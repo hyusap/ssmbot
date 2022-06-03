@@ -1,5 +1,7 @@
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
+// Might want to send an explicit message to the user if they're not in the server instead of doing nothing
+
 const constants = {
     // we have to multiply by 1.56 to account for some weird timeout behavior, idk why lol.
     TIMEOUT_MILLISECONDS: 1.56 * process.env.TIMEOUT_MINUTES * 60 * 1000,
@@ -119,15 +121,16 @@ async function udpateModmail(client, activeMessages, message) {
     if (!author) return;
 
     const newModmailContent = modmailContent + '\n' + message.content;
-    const previewContent = getPreviewContent(newModmailContent);
 
     // update preview
     const previewMessage = await message.channel.messages.fetch(previewId);
     const newPreviewEmbed = new MessageEmbed(previewMessage.embeds[0])
-        .setDescription(previewContent);
+        .setDescription(getPreviewContent(newModmailContent))
+        .setFooter({ text: `${newModmailContent.length} characters`})
+        .setTimestamp();
     
     if (newModmailContent.length > 4092)
-        newPreviewEmbed.setFooter({ text: constants.MODMAIL_LENGTH_EXCEEDED });
+        newPreviewEmbed.setFooter({ text: newPreviewEmbed.footer.text + '\n' + constants.MODMAIL_LENGTH_EXCEEDED });
 
     const sendButton = new MessageButton()
         .setLabel(constants.SEND_BUTTON_TEXT)
