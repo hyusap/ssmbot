@@ -1,4 +1,5 @@
 const { MessageEmbed } = require("discord.js");
+const { previewContent, cancellationTimeout } = require('./modmail.js');
 
 const constants = {
     NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
@@ -7,31 +8,36 @@ const constants = {
 module.exports = {
     name: 'messageDelete',
     async execute(client, activeMessages, message) {
-        // return if the message is not a modmail message or by the bot
-        if (!activeMessages.has(message.author.id) || message.channel.type !== "DM" || message.author.bot) return;
+        if (message.channel.type !== "DM" || message.author.bot) return;
 
-        // load channel, annoying error handling
-        const modmailChannel = await client.channels.fetch(process.env.CHANNEL_ID)
-            .catch(() => console.error(constants.NO_CHANNEL_FETCH));
-        if (!modmailChannel) return;
+        // return if a modmail is not active for this user
+        if (!activeMessages.has(message.author.id)) return;
 
-        // eslint-disable-next-line no-unused-vars
-        const [messageId, previewId, _] = activeMessages.get(message.author.id);
-        const modmailMessage = await modmailChannel.messages.fetch(messageId);
-        const modmailEmbed = modmailMessage.embeds[0];
+        // load message content and preview
+        const { modmailContent, previewId, timeoutHandle } = activeMessages.get(message.author.id);
+
+        // edit the modmail content to include the new changes and handle the edit being too long
+        const newModmailContent = modmailContent.replace(message.content, '');
+        if (newModmailContent.length > 4096) {
+            await message.channel.send({ embeds: [constants.EDIT_TOO_LONG] });
+            return;
+        }
 
         const previewMessage = await message.channel.messages.fetch(previewId);
         const previewEmbed = previewMessage.embeds[0];
 
-        const newModmailEmbed = new MessageEmbed(modmailEmbed)
-            .setDescription(modmailEmbed.description.replace(message.content, ""))
-            .setTimestamp();
-
+        // maybe update char count here? idk if it's worth it though
         const newPreviewEmbed = new MessageEmbed(previewEmbed)
-            .setDescription(previewEmbed.description.replace(message.content, ""))
+            .setDescription(previewContent(newModmailContent))
             .setTimestamp();
 
-        await modmailMessage.edit({ embeds: [newModmailEmbed] });
         await previewMessage.edit({ embeds: [newPreviewEmbed] });
+
+        // renew timeout
+        clearTimeout(timeoutHandle);
+        const newTimeoutHandle = cancellationTimeout(activeMessages, message.author.id, message.channel, previewMessage);
+        
+        // update activeMessages
+        activeMessages.set(message.author.id, { modmailContent: newModmailContent, previewId: previewMessage.id, timeoutHandle: newTimeoutHandle });
     }
 }
