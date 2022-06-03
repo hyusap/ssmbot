@@ -1,4 +1,5 @@
 const { MessageEmbed } = require('discord.js');
+const { previewContent, cancellationTimeout } = require('./modmail.js');
 
 const constants = {
     NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
@@ -13,38 +14,33 @@ module.exports = {
     async execute(client, activeMessages, oldMessage, newMessage) {
         if (oldMessage.channel.type !== "DM" || oldMessage.author.bot) return;
 
-        // return if the a modmail is not active for this user
+        // return if a modmail is not active for this user
         if (!activeMessages.has(newMessage.author.id)) return;
 
-        // load channel, annoying error handling
-        const modmailChannel = await client.channels.fetch(process.env.CHANNEL_ID)
-            .catch(() => console.error(constants.NO_CHANNEL_FETCH));
-        if (!modmailChannel) return;
+        // load message content and preview
+        const { modmailContent, previewId, timeoutHandle } = activeMessages.get(oldMessage.author.id);
 
-        // eslint-disable-next-line no-unused-vars
-        const [messageId, previewId, _] = activeMessages.get(oldMessage.author.id);
-        const modmailMessage = await modmailChannel.messages.fetch(messageId);
-        const modmailEmbed = modmailMessage.embeds[0];
+        // edit the modmail content to include the new changes and handle the edit being too long
+        const newModmailContent = modmailContent.replace(oldMessage.content, newMessage.content);
+        if (newModmailContent.length > 4096) {
+            await oldMessage.channel.send({ embeds: [constants.EDIT_TOO_LONG] });
+            return;
+        }
 
         const previewMessage = await oldMessage.channel.messages.fetch(previewId);
         const previewEmbed = previewMessage.embeds[0];
 
-        const newModmailEmbed = new MessageEmbed(modmailEmbed)
-            .setDescription(modmailEmbed.description.replace(oldMessage.content, newMessage.content))
-            .setTimestamp();
-
         const newPreviewEmbed = new MessageEmbed(previewEmbed)
-            .setDescription(previewEmbed.description.replace(oldMessage.content, newMessage.content))
+            .setDescription(previewContent(newModmailContent))
             .setTimestamp();
 
-        // Warn about edit if it makes message too long
-        const descriptionSize = newModmailEmbed.description.length;
-        if (descriptionSize > 4096) {
-            await newMessage.reply({ embeds: [constants.EDIT_TOO_LONG] });
-            return;
-        }
-
-        await modmailMessage.edit({ embeds: [newModmailEmbed] });
         await previewMessage.edit({ embeds: [newPreviewEmbed] });
+
+        // renew timeout
+        clearTimeout(timeoutHandle);
+        const newTimeoutHandle = cancellationTimeout(activeMessages, oldMessage.author.id, oldMessage.channel, previewMessage);
+        
+        // update activeMessages
+        activeMessages.set(oldMessage.author.id, { modmailContent: newModmailContent, previewId: previewMessage.id, timeoutHandle: newTimeoutHandle });
     }
 };

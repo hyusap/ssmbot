@@ -1,4 +1,5 @@
 const { MessageEmbed } = require("discord.js");
+const { chunkSubstr } = require("../util.js");
 
 const constants = {
     MODMAIL_SENT: new MessageEmbed()
@@ -34,32 +35,69 @@ module.exports = {
     name: 'interactionCreate',
     async execute(client, activeMessages, interaction) {
         if (interaction.isButton()) {
-            if (interaction.customId === "finalize-modmail") {
-                activeMessages.delete(interaction.user.id);
+            if (interaction.customId === "send-modmail") {
+                // check that the modmail is still active
+                if (!activeMessages.has(interaction.user.id)) {
+                    await interaction.deferUpdate();
+                    await interaction.editReply({ components: [], ephemeral: true });
+                    await interaction.followUp({ embeds: [constants.COMMAND_ERROR] });
+
+                    return;
+                }
+
+                // load message content and preview
+                const { modmailContent, previewId, timeoutHandle } = activeMessages.get(interaction.user.id);
+                const previewMessage = await interaction.channel.messages.fetch(previewId);
+                const previewEmbed = previewMessage.embeds[0];
+
+                // split the modmail content into strings of 4096 or less characters
+                const modmailContentChunks = chunkSubstr(modmailContent, 4096);
+                
+                // map each chunk to an embed
+                const modmailContentEmbeds = modmailContentChunks.map((chunk, index) => {
+                    // change author title to include message part
+                    const authorTitle = previewEmbed.title + (modmailContentChunks.length === 1 ? '' : ` (Part ${index + 1})`);
+
+                    return new MessageEmbed(previewEmbed)
+                        .setTitle(authorTitle)
+                        .setDescription(chunk)
+                        .setTimestamp();
+                });
+
+                // load modmail channel
+                const modmailChannel = await client.channels.fetch(process.env.CHANNEL_ID)
+                    .catch(() => console.error(constants.NO_CHANNEL_FETCH));
+                if (!modmailChannel) return;
+
+                // send each embed in a message in the modmail channel
+                for (const embed of modmailContentEmbeds)
+                    await modmailChannel.send({ embeds: [embed] });
 
                 // Remove the buttons
                 await interaction.deferUpdate();
                 await interaction.editReply({ components: [], ephemeral: true });
                 await interaction.followUp({ embeds: [constants.MODMAIL_SENT] });
 
-                return;
-            } else {
-                // Fetch channel
-                const modmailChannel = await client.channels.fetch(process.env.CHANNEL_ID)
-                    .catch(() => console.error(constants.NO_CHANNEL_FETCH));
-                if (!modmailChannel) return;
-
-                // eslint-disable-next-line no-unused-vars
-                const [messageId, previewId, _] = activeMessages.get(interaction.user.id);
-                const modmailMessage = await modmailChannel.messages.fetch(messageId);
-
-                const previewMessage = await interaction.channel.messages.fetch(previewId);
-
-                // Clear content of modmail and preview
+                // remove the modmail from the active messages
                 activeMessages.delete(interaction.user.id);
 
-                await modmailMessage.edit({ embeds: [constants.MODMAIL_RETRACTED] });
-                await previewMessage.edit({ embeds: [constants.MODMAIL_RETRACTED] });
+                // clear the timeout
+                clearTimeout(timeoutHandle);
+
+                return;
+            } else if (interaction.customId === "cancel-modmail") {
+                const { previewId, timeoutHandle } = activeMessages.get(interaction.user.id);
+
+                // retract preview message
+                const previewMessage = await interaction.channel.messages.fetch(previewId);
+                const retractionEmbed = new MessageEmbed(constants.MODMAIL_RETRACTED)
+                    .setTimestamp();
+
+                await previewMessage.edit({ embeds: [retractionEmbed] });
+
+                // Cancel modmail and clear the timeout
+                activeMessages.delete(interaction.user.id);
+                clearTimeout(timeoutHandle);
 
                 // Remove buttons
                 await interaction.deferUpdate();
