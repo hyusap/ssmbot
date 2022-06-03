@@ -43,34 +43,29 @@ module.exports = {
           .update(interaction.user.tag + salt)
           .digest("hex")
           .slice(-10);
-        console.log(hash);
 
-        let testAccount = await nodemailer.createTestAccount();
         let transporter = nodemailer.createTransport({
-          host: "smtp.ethereal.email",
-          port: 587,
-          secure: false, // true for 465, false for other ports
+          service: "hotmail",
           auth: {
-            user: testAccount.user, // generated ethereal user
-            pass: testAccount.pass, // generated ethereal password
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
           },
         });
 
-        let info = await transporter.sendMail({
-          from: '"NCSSM" <ncssm@test.com>',
+        await transporter.sendMail({
+          from: '"NCSSM Discord" <ncssmdiscord@outlook.com>',
           to: email,
           subject: "Verification Email",
-          text:
-            "Welcome to the NCSSM Discord Server! Here is your verification code: " +
-            hash,
+          text: `Welcome to the NCSSM Discord Server! Here is your verification code: ${hash}. Please use the command "/verify code code:${hash}" in the verification channel to verify your account.`,
         });
 
-        console.log("Message sent: %s", info.messageId);
-        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-        interaction.followUp(
-          `Please check your email for a verification link. ${nodemailer.getTestMessageUrl(
-            info
-          )}`
+        interaction.editReply(
+          `Please check your email for a verification link.`
+        );
+
+        // log this email
+        console.log(
+          `Email sent to: ${email} with code: ${hash} for user ${interaction.user.tag}`
         );
       } else {
         await interaction.reply("This email is not vaild, please try again.");
