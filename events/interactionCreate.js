@@ -61,7 +61,7 @@ module.exports = {
                     return new MessageEmbed(previewEmbed)
                         .setTitle(authorTitle)
                         .setDescription(chunk)
-                        .setFooter({ text: `${chunk.length} characters.` })
+                        .setFooter({ text: `${chunk.length} characters` })
                         .setTimestamp();
                 });
 
@@ -115,7 +115,7 @@ module.exports = {
         const command = client.commands.get(interaction.commandName);
 
         if (!command) {
-            await interaction.reply({ embeds: [constants.COMMAND_NOT_FOUND] });
+            await interaction.reply({ embeds: [constants.COMMAND_NOT_FOUND], ephemeral: true });
             return;
         }
 

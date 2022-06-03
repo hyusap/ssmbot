@@ -14,56 +14,67 @@ const constants = {
     INSTRUCTIONS: new MessageEmbed()
         .setColor("#eeff00")
         .setTitle("Modmail Instructions")
-        .setDescription(`Welcome to modmail! type \`!modmail\` to start a new modmail.
-                        
-                        After that, just start sending messages in this DM to create your modmail.
+        .setDescription(`Welcome to modmail! Just send messages in this DM to create your modmail ticket.
 
-                        A preview embed of what is being sent to the mods will be sent to you. Both sending more messages and editing your existing messages will update the preview.
-                        
-                        If your message becomes more than 4096 characters long, the preview embed will be shortened, but any overflowing messages will still be sent to the mods.
-                        
-                        To send the modmail, just press the "Send Modmail" button at the bottom of the preview.
-                        To cancel the modmail, just press the "Cancel Modmail" button at the bottom of the preview.
+To send the modmail, just press the "Send Modmail" button. To cancel the modmail, press the "Cancel Modmail" button. **Modmails are currently not anonymous, with reports being tied to your name on Discord.**
 
-                        After about 15 minutes of inactivity, the modmail will be automatically cancelled.
-                        `),
+**A preview of what will be sent to the mods will be sent to you immediately.** Sending additional messages, editing your existing messages, and deleting your messages will update the preview.
+
+Once sent, your modmail ***cannot*** be deleted, unless you request that it be done by the mods. Note that some admins in this server have message loggers, so **your message might still be visible to some admins even after being deleted.**
+
+After 15 minutes or more of inactivity, the modmail will be automatically canceled.
+
+
+Note: Deleting messages can be buggy depending on message content. If your modmail ticket ends in an undesirable position, please cancel the modmail and try again.
+
+Note: If your message becomes more than 4096 characters long, the preview embed will be cut off to that length. However, any overflowing messages will still be sent to the mods.`),
+    INTRO: new MessageEmbed()
+        .setColor("#00ff00")
+        .setTitle("Modmail Instructions")
+        .setDescription("Welcome to modmail! type `!modmail` to start a new modmail."),
 
     MESSAGE_COLOR: "#00ffff",
     MESSAGE_TITLE: "Modmail Message",
 
-    SEND_BUTTON_TEXT: "Send Modmail",
-    CANCEL_BUTTON_TEXT: "Cancel Modmail",
-
     DEFAULT_MODMAIL_TEXT: "Start sending messages to be included in the modmail, and they will show up here replacing this message in the preview.",
-    MODMAIL_LENGTH_EXCEEDED: `The Modmail preview content has been shortened due to the 4096 character limit. Don't worry though, any more messages will still be shown in your modmail, they just won't show up in the preview.`,
+    MODMAIL_LENGTH_EXCEEDED: `The modmail preview content has been shortened due to the 4096 character limit. Don't worry though, any more messages will still be shown in your modmail, they just won't show up in the preview.`,
 
     MODMAIL_FAILED: new MessageEmbed()
         .setColor("#ff0000")
         .setTitle("Modmail Failed")
         .setDescription("Something went wrong when sending the modmail. Please try again later."),
-
-    MODMAIL_CANCELED: new MessageEmbed()
+    MODMAIL_CANCELED_INACTIVITY: new MessageEmbed()
         .setColor("#ff0000")
         .setTitle("Modmail Canceled")
-        .setDescription("This modmail has been canceled."),
+        .setDescription("This modmail has been canceled due to inactivity."),
+    MODMAIL_CANCELED_NEW: new MessageEmbed()
+        .setColor("#ff0000")
+        .setTitle("Modmail Canceled")
+        .setDescription("This modmail has been canceled because you started a new one."),
+
+    BUTTON_ROW: new MessageActionRow()
+        .addComponents(new MessageButton()
+            .setLabel("Send Modmail")
+            .setStyle('PRIMARY')
+            .setCustomId('send-modmail'))
+        .addComponents(new MessageButton()
+            .setLabel("Cancel Modmail")
+            .setStyle('DANGER')
+            .setCustomId('cancel-modmail'))
 }
 
 // set timeout to automatically cancel modmail
 function setCancellationTimeout(activeMessages, userId, dmChannel, previewMessage) {
     const previewEmbed = previewMessage.embeds[0];
     const newPreviewEmbed = new MessageEmbed(previewEmbed)
-        .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer.text : '') + '\n' + '(cancelled)'})
+        .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer.text : '') + '\n' + '(canceled)' })
         .setTimestamp();
 
     const timeoutHandle = setTimeout(() => {
         activeMessages.delete(userId);
 
         // send cancellation message and remove buttons
-        const cancellationEmbed = new MessageEmbed(constants.MODMAIL_CANCELED)
-            .setDescription(`This modmail has been canceled due to inactivity.`)
-            .setTimestamp();
-
-        dmChannel.send({ embeds: [cancellationEmbed] }).catch(console.error);
+        dmChannel.send({ embeds: [constants.MODMAIL_CANCELED_INACTIVITY.setTimestamp()] }).catch(console.error);
         previewMessage.edit({ embeds: [newPreviewEmbed], components: [] }).catch(console.error);
 
     }, constants.TIMEOUT_MILLISECONDS);
@@ -100,7 +111,7 @@ async function newModmail(client, activeMessages, message) {
         .setTimestamp();
 
     const previewMessage = await message.channel.send({ embeds: [previewEmbed] });
-    
+
     // set timeout
     const timeoutHandle = setCancellationTimeout(activeMessages, message.author.id, message.channel, previewMessage);
 
@@ -108,7 +119,7 @@ async function newModmail(client, activeMessages, message) {
     activeMessages.set(message.author.id, { modmailContent: '', previewId: previewMessage.id, timeoutHandle });
 }
 
-async function udpateModmail(client, activeMessages, message) {
+async function updateModmail(client, activeMessages, message) {
     const { modmailContent, previewId, timeoutHandle } = activeMessages.get(message.author.id);
 
     // load channel, server, and author -- annoying error handling
@@ -126,27 +137,13 @@ async function udpateModmail(client, activeMessages, message) {
     const previewMessage = await message.channel.messages.fetch(previewId);
     const newPreviewEmbed = new MessageEmbed(previewMessage.embeds[0])
         .setDescription(getPreviewContent(newModmailContent))
-        .setFooter({ text: `${newModmailContent.length} characters`})
+        .setFooter({ text: `${newModmailContent.length} characters` })
         .setTimestamp();
-    
+
     if (newModmailContent.length > 4092)
         newPreviewEmbed.setFooter({ text: newPreviewEmbed.footer.text + '\n' + constants.MODMAIL_LENGTH_EXCEEDED });
 
-    const sendButton = new MessageButton()
-        .setLabel(constants.SEND_BUTTON_TEXT)
-        .setStyle('PRIMARY')
-        .setCustomId('send-modmail');
-
-    const cancelButton = new MessageButton()
-        .setLabel(constants.CANCEL_BUTTON_TEXT)
-        .setStyle('DANGER')
-        .setCustomId('cancel-modmail');
-
-    const buttonRow = new MessageActionRow()
-        .addComponents(sendButton)
-        .addComponents(cancelButton);
-
-    await previewMessage.edit({ embeds: [newPreviewEmbed], components: [buttonRow] });
+    await previewMessage.edit({ embeds: [newPreviewEmbed], components: [constants.BUTTON_ROW] });
 
     // renew timeout
     clearTimeout(timeoutHandle);
@@ -173,16 +170,12 @@ module.exports = {
                 // send cancellation message and remove buttons
                 const previewMessage = await message.channel.messages.fetch(previewId);
                 const previewEmbed = previewMessage.embeds[0];
-                
+
                 const newPreviewEmbed = new MessageEmbed(previewEmbed)
-                    .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer.text : '') + '\n' + '(cancelled)'})
+                    .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer.text : '') + '\n' + '(canceled)' })
                     .setTimestamp();
 
-                const cancellationEmbed = new MessageEmbed(constants.MODMAIL_CANCELED)
-                    .setDescription(`This modmail has been canceled since you started a new one.`)
-                    .setTimestamp();
-
-                message.channel.send({ embeds: [cancellationEmbed] }).catch(console.error);
+                message.channel.send({ embeds: [constants.MODMAIL_CANCELED_NEW] }).catch(console.error);
                 previewMessage.edit({ embeds: [newPreviewEmbed], components: [] }).catch(console.error);
 
                 // clear timeout
@@ -190,9 +183,9 @@ module.exports = {
             }
             await newModmail(client, activeMessages, message);
         } else if (activeMessages.has(message.author.id)) {
-            await udpateModmail(client, activeMessages, message);
+            await updateModmail(client, activeMessages, message);
         } else {
-            await message.channel.send({ embeds: [constants.INSTRUCTIONS] });
+            await message.channel.send({ embeds: [constants.INTRO] });
         }
     },
     previewContent: getPreviewContent,

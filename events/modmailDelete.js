@@ -1,9 +1,6 @@
 const { MessageEmbed } = require("discord.js");
 const { previewContent, cancellationTimeout } = require('./modmail.js');
 
-const constants = {
-    NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
-}
 
 module.exports = {
     name: 'messageDelete',
@@ -16,17 +13,12 @@ module.exports = {
         // load message content and preview
         const { modmailContent, previewId, timeoutHandle } = activeMessages.get(message.author.id);
 
-        // edit the modmail content to include the new changes and handle the edit being too long
+        // edit the modmail content to include the new changes
         const newModmailContent = modmailContent.replace(message.content, '');
-        if (newModmailContent.length > 4096) {
-            await message.channel.send({ embeds: [constants.EDIT_TOO_LONG] });
-            return;
-        }
 
         const previewMessage = await message.channel.messages.fetch(previewId);
         const previewEmbed = previewMessage.embeds[0];
 
-        // maybe update char count here? idk if it's worth it though
         const newPreviewEmbed = new MessageEmbed(previewEmbed)
             .setDescription(previewContent(newModmailContent))
             .setTimestamp();
@@ -36,7 +28,7 @@ module.exports = {
         // renew timeout
         clearTimeout(timeoutHandle);
         const newTimeoutHandle = cancellationTimeout(activeMessages, message.author.id, message.channel, previewMessage);
-        
+
         // update activeMessages
         activeMessages.set(message.author.id, { modmailContent: newModmailContent, previewId: previewMessage.id, timeoutHandle: newTimeoutHandle });
     }

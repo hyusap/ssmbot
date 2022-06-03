@@ -6,7 +6,7 @@ const constants = {
     EDIT_TOO_LONG: new MessageEmbed()
         .setColor("#ff0000")
         .setTitle("Edited message exceeds length limit!")
-        .setDescription("Your edited message is too long, and has not been added into the modmail. Please send a new message instead."),
+        .setDescription("Your edited message is too long, and has not been added into the modmail. Please try again."),
 }
 
 module.exports = {
