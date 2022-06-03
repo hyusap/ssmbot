@@ -37,7 +37,9 @@ module.exports = {
 
         // await interaction.reply({ embeds: [poll] });
         const message = await interaction.channel.send({ embeds: [poll] });
-        interaction.defer
+
+        //TODO: defer interaction bc of rate limit
+        // interaction.defer
 
         if (message) {
             for (const reaction of reactions) {
