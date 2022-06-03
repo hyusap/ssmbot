@@ -52,7 +52,7 @@ const constants = {
 function setCancellationTimeout(activeMessages, userId, dmChannel, previewMessage) {
     const previewEmbed = previewMessage.embeds[0];
     const newPreviewEmbed = new MessageEmbed(previewEmbed)
-        .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer : '') + '\n' + '(cancelled)'})
+        .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer.text : '') + '\n' + '(cancelled)'})
         .setTimestamp();
 
     const timeoutHandle = setTimeout(() => {
@@ -166,7 +166,28 @@ module.exports = {
         if (message.channel.type !== "DM" || message.author.bot) return;
 
         if (message.content.startsWith(constants.MODMAIL_COMMAND)) {
-            activeMessages.delete(message.author.id);
+            if (activeMessages.has(message.author.id)) {
+                const { previewId, timeoutHandle } = activeMessages.get(message.author.id);
+                activeMessages.delete(message.author.id);
+
+                // send cancellation message and remove buttons
+                const previewMessage = await message.channel.messages.fetch(previewId);
+                const previewEmbed = previewMessage.embeds[0];
+                
+                const newPreviewEmbed = new MessageEmbed(previewEmbed)
+                    .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer.text : '') + '\n' + '(cancelled)'})
+                    .setTimestamp();
+
+                const cancellationEmbed = new MessageEmbed(constants.MODMAIL_CANCELED)
+                    .setDescription(`This modmail has been canceled since you started a new one.`)
+                    .setTimestamp();
+
+                message.channel.send({ embeds: [cancellationEmbed] }).catch(console.error);
+                previewMessage.edit({ embeds: [newPreviewEmbed], components: [] }).catch(console.error);
+
+                // clear timeout
+                clearTimeout(timeoutHandle);
+            }
             await newModmail(client, activeMessages, message);
         } else if (activeMessages.has(message.author.id)) {
             await udpateModmail(client, activeMessages, message);
