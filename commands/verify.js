@@ -1,7 +1,6 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const nodemailer = require("nodemailer");
 const { createHash } = require("crypto");
-const { CommandInteractionOptionResolver } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -90,6 +89,9 @@ module.exports = {
         .slice(-10);
       if (code === hash) {
         await interaction.reply("You are verified!");
+        await interaction.member.edit({
+          roles: [process.env.VERIFIED_ROLE_ID],
+        });
       } else {
         await interaction.reply("This code is incorrect, please try again.");
       }
