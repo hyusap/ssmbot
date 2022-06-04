@@ -57,10 +57,21 @@ module.exports = {
           to: email,
           subject: "Verification Email",
           text: `Welcome to the NCSSM Discord Server! Here is your verification code: ${hash}. Please use the command "/verify code code:${hash}" in the verification channel to verify your account.`,
+          html: `
+            <body style="background-color: #cdced1; padding: 30px">
+              <div style="font-family: Arial; margin: 0px auto; padding: 20px; width: 500px; background-color: white; border-radius: 20px;">
+                <h1 style="text-align: center;">Welcome to the NCSSM Discord Server!</h1>
+                <p>Here is your verification code: <strong>${hash}</strong></p>
+                <p>Please use the command <code style="background-color: #d7ded9;padding: 5px;border-radius: 5px;">/verify code code:${hash}</code> in the verification channel to verify your account.</p>
+                <p>If you have any questions or problems, please message a admin, or use the modmail system.</p>
+                <p>Thanks for joining!</p>
+              </div>
+            </body>
+          `,
         });
 
         interaction.editReply(
-          `Please check your email for a verification link.`
+          "Please check your email for a verification link from `ncssmdiscord@outlook.com`."
         );
 
         // log this email
