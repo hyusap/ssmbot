@@ -93,9 +93,7 @@ module.exports = {
           process.env.VERIFIED_ROLE_ID !== undefined,
           "Define the role ID in enviroment variables as VERIFIED_ROLE_ID"
         );
-        await interaction.member.edit({
-          roles: [process.env.VERIFIED_ROLE_ID],
-        });
+        await interaction.member.roles.add(process.env.VERIFIED_ROLE_ID);
       } else {
         await interaction.reply("This code is incorrect, please try again.");
       }
