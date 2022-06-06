@@ -89,6 +89,10 @@ module.exports = {
         .slice(-10);
       if (code === hash) {
         await interaction.reply("You are verified!");
+        console.assert(
+          process.env.VERIFIED_ROLE_ID !== undefined,
+          "Define the role ID in enviroment variables as VERIFIED_ROLE_ID"
+        );
         await interaction.member.edit({
           roles: [process.env.VERIFIED_ROLE_ID],
         });
