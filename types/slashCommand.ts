@@ -5,6 +5,8 @@ import {
 import { CommandInteraction } from "discord.js";
 
 export interface SlashCommand {
-  data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
+  data:
+    | Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">
+    | SlashCommandSubcommandsOnlyBuilder;
   execute(interaction: CommandInteraction): void;
 }
