@@ -1,8 +1,15 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const nodemailer = require("nodemailer");
-const { createHash } = require("crypto");
+import {
+  BaseCommandInteraction,
+  CommandInteraction,
+  Interaction,
+} from "discord.js";
 
-module.exports = {
+import { SlashCommandBuilder } from "@discordjs/builders";
+import nodemailer from "nodemailer";
+import { createHash } from "crypto";
+import { SlashCommand } from "../types/slashCommand";
+
+const verify: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName("verify")
     .setDescription("Get access to the server")
@@ -30,9 +37,9 @@ module.exports = {
             .setRequired(true)
         )
     ),
-  async execute(interaction) {
+  async execute(interaction: CommandInteraction) {
     if (interaction.options.getSubcommand() === "email") {
-      const email = interaction.options.getString("email");
+      const email: string = interaction.options.getString("email")!;
       const emailRegex = /[A-Za-z]+(22|23|24)[A-Za-z]+@ncssm\.edu/;
       if (emailRegex.test(email)) {
         await interaction.deferReply();
@@ -81,22 +88,32 @@ module.exports = {
         await interaction.reply("This email is not vaild, please try again.");
       }
     } else if (interaction.options.getSubcommand() === "code") {
-      const code = interaction.options.getString("code");
-      const salt = process.env.SALT || "salt";
-      const hash = createHash("sha256")
-        .update(interaction.user.tag + salt)
-        .digest("hex")
-        .slice(-10);
-      if (code === hash) {
-        await interaction.reply("You are verified!");
-        console.assert(
-          process.env.VERIFIED_ROLE_ID !== undefined,
-          "Define the role ID in enviroment variables as VERIFIED_ROLE_ID"
-        );
-        await interaction.member.roles.add(process.env.VERIFIED_ROLE_ID);
+      const role_id = process.env.VERIFIED_ROLE_ID;
+      if (role_id) {
+        const code = interaction.options.getString("code");
+        const salt = process.env.SALT || "salt";
+        const hash = createHash("sha256")
+          .update(interaction.user.tag + salt)
+          .digest("hex")
+          .slice(-10);
+        if (code === hash) {
+          await interaction.reply("You are verified!");
+          if (interaction.member) {
+            const roles = interaction.member.roles;
+            if ("add" in roles) {
+              await roles.add(role_id);
+            }
+          }
+        } else {
+          await interaction.reply("This code is incorrect, please try again.");
+        }
       } else {
-        await interaction.reply("This code is incorrect, please try again.");
+        await interaction.reply(
+          "This command is not set up, please contact a moderator."
+        );
       }
     }
   },
 };
+
+export default verify;
