@@ -5,6 +5,8 @@ import "dotenv/config";
 
 import path from "path";
 import { fileURLToPath } from "url";
+import { DiscordEvent } from "./types/event";
+import { SlashCommand } from "./types/slashCommand";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,19 +39,21 @@ const commandFiles = readdirSync(commandsPath).filter((file) =>
 
 for (const file of commandFiles) {
   const filePath = join(commandsPath, file);
-  const command = await import(filePath);
-  client.commands.set(command.default.data.name, command.default);
+  const commandComplete = await import(filePath);
+  const command: SlashCommand = commandComplete.default;
+  client.commands.set(command.data.name, command);
 }
 
 // Set event handling
 const eventsPath = join(__dirname, "events");
 const eventFiles = readdirSync(eventsPath).filter((file) =>
-  file.endsWith(".js")
+  file.endsWith(".ts")
 );
 
 for (const file of eventFiles) {
   const filePath = join(eventsPath, file);
-  const event = await import(filePath);
+  const eventComplete = await import(filePath);
+  const event: DiscordEvent = eventComplete.default;
   if (event.once) {
     client.once(event.name, (...args) => event.execute(client, ...args));
   } else {
