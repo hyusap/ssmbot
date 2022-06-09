@@ -1,6 +1,6 @@
 import { SlashCommand } from "../types/slashCommand";
 
-const { SlashCommandBuilder } = require("@discordjs/builders");
+import { SlashCommandBuilder } from "@discordjs/builders";
 
 const test: SlashCommand = {
   data: new SlashCommandBuilder()

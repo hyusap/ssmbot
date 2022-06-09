@@ -2,8 +2,8 @@ import { SlashCommandStringOption } from "@discordjs/builders";
 import { GuildMember } from "discord.js";
 import { SlashCommand } from "../types/slashCommand";
 
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const { MessageEmbed } = require("discord.js");
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { MessageEmbed } from "discord.js";
 
 const poll: SlashCommand = {
   data: new SlashCommandBuilder()
@@ -63,10 +63,10 @@ const poll: SlashCommand = {
       var reactions = [];
       const poll = new MessageEmbed()
         .setTitle(`Poll: ${interaction.options.getString("question")}`)
-        .setAuthor({
-          name: interaction.member.nickname || interaction.user.username,
-          iconURL: interaction.user.avatarURL({ dynamic: true }),
-        });
+        .setAuthor(
+          interaction.member.nickname || interaction.user.username,
+          interaction.user.avatarURL({ dynamic: true })!
+        );
 
       for (let i = 1; i <= 10; i++) {
         const option = interaction.options.getString(`a${i}`);
@@ -89,3 +89,5 @@ const poll: SlashCommand = {
     }
   },
 };
+
+export default poll;
