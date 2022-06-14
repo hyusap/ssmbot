@@ -4,9 +4,10 @@ import { Client, Collection, Intents } from "discord.js";
 import "dotenv/config";
 
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { DiscordEvent } from "./types/event";
 import { SlashCommand } from "./types/slashCommand";
+import { ActiveModmail } from "./events/modmail";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,7 +19,7 @@ declare module "discord.js" {
 }
 
 // Map's user ID to the active modmail ID and embed if there is one
-const activeMessages = new Map();
+const activeMessages: Map<string, ActiveModmail> = new Map();
 
 const client = new Client({
   intents: [
@@ -38,7 +39,7 @@ const commandFiles = readdirSync(commandsPath).filter((file) =>
 );
 
 for (const file of commandFiles) {
-  const filePath = join(commandsPath, file);
+  const filePath = pathToFileURL(join(commandsPath, file)).href;
   const commandComplete = await import(filePath);
   const command: SlashCommand = commandComplete.default;
   client.commands.set(command.data.name, command);
@@ -51,7 +52,7 @@ const eventFiles = readdirSync(eventsPath).filter((file) =>
 );
 
 for (const file of eventFiles) {
-  const filePath = join(eventsPath, file);
+  const filePath = pathToFileURL(join(eventsPath, file)).href;
   const eventComplete = await import(filePath);
   const event: DiscordEvent = eventComplete.default;
   if (event.once) {

@@ -1,7 +1,11 @@
-import { MessageEmbed } from "discord.js";
+import { Client, Interaction, MessageEmbed, TextChannel } from "discord.js";
+import { DiscordEvent } from "../types/event";
 import { chunkSubstr } from "../util.js";
+import { ActiveModmail } from "./modmail";
 
 const constants = {
+  NO_CHANNEL_FETCH: "No channel could be found. Check the channel ID.",
+
   MODMAIL_SENT: new MessageEmbed()
     .setTitle("Your modmail entry has been sent!")
     .setColor("#00ff00")
@@ -36,23 +40,23 @@ const constants = {
 };
 
 export const name = "interactionCreate";
-export async function execute(client, activeMessages, interaction) {
+export async function execute(client: Client, activeMessages: Map<string, ActiveModmail>, interaction: Interaction) {
   if (interaction.isButton()) {
     // check that the modmail is still active
     if (!activeMessages.has(interaction.user.id)) {
       await interaction.deferUpdate();
-      await interaction.editReply({ components: [], ephemeral: true });
+      await interaction.editReply({ components: [], ephemeral: true } as any); // not exactly sure how to fix this, empheral must be a property really far down the line or something
       await interaction.followUp({ embeds: [constants.COMMAND_ERROR] });
 
       return;
     }
 
-    if (interaction.customId === "send-modmail") {
+    if (interaction.customId === "send-modmail" && interaction.channel !== null) {
       // load message content and preview
       const { modmailContent, previewId, timeoutHandle } = activeMessages.get(
         interaction.user.id
-      );
-      const previewMessage = await interaction.channel.messages.fetch(
+      ) ?? { modmailContent: "", previewId: "", timeoutHandle: "" };
+      const previewMessage =  await interaction.channel.messages.fetch(
         previewId
       );
       const previewEmbed = previewMessage.embeds[0];
@@ -76,8 +80,8 @@ export async function execute(client, activeMessages, interaction) {
 
       // load modmail channel
       const modmailChannel = await client.channels
-        .fetch(process.env.CHANNEL_ID)
-        .catch(() => console.error(constants.NO_CHANNEL_FETCH));
+        .fetch(process.env.CHANNEL_ID ?? "")
+        .catch(() => console.error(constants.NO_CHANNEL_FETCH)) as TextChannel;
       if (!modmailChannel) return;
 
       // send each embed in a message in the modmail channel
@@ -86,7 +90,7 @@ export async function execute(client, activeMessages, interaction) {
 
       // Remove the buttons
       await interaction.deferUpdate();
-      await interaction.editReply({ components: [], ephemeral: true });
+      await interaction.editReply({ components: [], ephemeral: true } as any);
       await interaction.followUp({ embeds: [constants.MODMAIL_SENT] });
 
       // remove the modmail from the active messages
@@ -97,9 +101,11 @@ export async function execute(client, activeMessages, interaction) {
 
       return;
     } else if (interaction.customId === "cancel-modmail") {
+      if (!interaction.channel || !activeMessages.get(interaction.user.id)) return;
+
       const { previewId, timeoutHandle } = activeMessages.get(
         interaction.user.id
-      );
+      ) ?? { previewId: "", timeoutHandle: "" };
 
       // retract preview message
       const previewMessage = await interaction.channel.messages.fetch(
@@ -117,7 +123,7 @@ export async function execute(client, activeMessages, interaction) {
 
       // Remove buttons
       await interaction.deferUpdate();
-      await interaction.editReply({ components: [], ephemeral: true });
+      await interaction.editReply({ components: [], ephemeral: true } as any);
       await interaction.followUp({ embeds: [constants.MODMAIL_DELETED] });
 
       return;
@@ -147,3 +153,11 @@ export async function execute(client, activeMessages, interaction) {
     });
   }
 }
+
+const interactionCreate: DiscordEvent = {
+  name: "interactionCreate",
+  once: false,
+  execute,
+};
+
+export default interactionCreate;
