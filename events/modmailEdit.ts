@@ -1,5 +1,10 @@
-import { MessageEmbed } from "discord.js";
-import { previewContent, cancellationTimeout } from "./modmail.js";
+import { Client, Message, MessageEmbed } from "discord.js";
+import { DiscordEvent } from "../types/event.js";
+import {
+  previewContent,
+  cancellationTimeout,
+  ActiveModmail,
+} from "./modmail.js";
 
 const constants = {
   NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
@@ -12,16 +17,20 @@ const constants = {
 };
 
 export const name = "messageUpdate";
-export async function execute(client, activeMessages, oldMessage, newMessage) {
+export async function execute(
+  client: Client,
+  activeMessages: Map<string, ActiveModmail>,
+  oldMessage: Message,
+  newMessage: Message
+) {
   if (oldMessage.channel.type !== "DM" || oldMessage.author.bot) return;
 
   // return if a modmail is not active for this user
-  if (!activeMessages.has(newMessage.author.id)) return;
+  const oldMessageObject = activeMessages.get(oldMessage.author.id);
+  if (!oldMessageObject) return;
 
   // load message content and preview
-  const { modmailContent, previewId, timeoutHandle } = activeMessages.get(
-    oldMessage.author.id
-  );
+  const { modmailContent, previewId, timeoutHandle } = oldMessageObject;
 
   // edit the modmail content to include the new changes and handle the edit being too long
   const newModmailContent = modmailContent.replace(
@@ -58,3 +67,11 @@ export async function execute(client, activeMessages, oldMessage, newMessage) {
     timeoutHandle: newTimeoutHandle,
   });
 }
+
+const modmailEdit: DiscordEvent = {
+  name: "messageUpdate",
+  once: false,
+  execute,
+};
+
+export default modmailEdit;

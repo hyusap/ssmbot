@@ -1,4 +1,15 @@
-import { MessageEmbed, MessageActionRow, MessageButton, Snowflake, TextChannel, Message, Client, ColorResolvable, DMChannel } from "discord.js";
+import {
+  MessageEmbed,
+  MessageActionRow,
+  MessageButton,
+  Snowflake,
+  TextChannel,
+  Message,
+  Client,
+  ColorResolvable,
+  DMChannel,
+  PartialDMChannel,
+} from "discord.js";
 import { DiscordEvent } from "../types/event";
 
 // Might want to send an explicit message to the user if they're not in the server instead of doing nothing
@@ -7,11 +18,12 @@ export type ActiveModmail = {
   modmailContent: string;
   previewId: Snowflake;
   timeoutHandle: NodeJS.Timeout;
-}
+};
 
 const constants = {
   // we have to multiply by 1.56 to account for some weird timeout behavior, idk why lol.
-  TIMEOUT_MILLISECONDS: 1.56 * (process.env.TIMEOUT_MINUTES as any as number) * 60 * 1000,
+  TIMEOUT_MILLISECONDS:
+    1.56 * (process.env.TIMEOUT_MINUTES as any as number) * 60 * 1000,
 
   NO_CHANNEL_FETCH: "Couldn't fetch channel, check value of CHANNEL_ID in .env",
   NO_GUILD_FETCH: "Couldn't fetch server, check value of SERVER_ID in .env",
@@ -85,7 +97,7 @@ Note: If your message becomes more than 4096 characters long, the preview embed 
 function setCancellationTimeout(
   activeMessages: Map<string, ActiveModmail>,
   userId: Snowflake,
-  dmChannel: DMChannel,
+  dmChannel: DMChannel | PartialDMChannel,
   previewMessage: Message
 ) {
   const previewEmbed = previewMessage.embeds[0];
@@ -120,7 +132,11 @@ function getPreviewContent(modmailContent: string) {
     : modmailContent;
 }
 
-async function newModmail(client: Client, activeMessages: Map<string, ActiveModmail>, message: Message) {
+async function newModmail(
+  client: Client,
+  activeMessages: Map<string, ActiveModmail>,
+  message: Message
+) {
   // load channel, server, and author -- annoying error handling
   const server = await client.guilds
     .fetch(process.env.SERVER_ID ?? "")
@@ -170,7 +186,11 @@ async function newModmail(client: Client, activeMessages: Map<string, ActiveModm
   });
 }
 
-async function updateModmail(client: Client, activeMessages: Map<string, ActiveModmail>, message: Message) {
+async function updateModmail(
+  client: Client,
+  activeMessages: Map<string, ActiveModmail>,
+  message: Message
+) {
   const { modmailContent, previewId, timeoutHandle } = activeMessages.get(
     message.author.id
   ) ?? { modmailContent: "", previewId: "", timeoutHandle: 0 };
@@ -197,8 +217,9 @@ async function updateModmail(client: Client, activeMessages: Map<string, ActiveM
 
   if (newModmailContent.length > 4092)
     newPreviewEmbed.setFooter({
-      text:
-      newPreviewEmbed.footer ? newPreviewEmbed.footer.text + "\n" + constants.MODMAIL_LENGTH_EXCEEDED : constants.MODMAIL_LENGTH_EXCEEDED,
+      text: newPreviewEmbed.footer
+        ? newPreviewEmbed.footer.text + "\n" + constants.MODMAIL_LENGTH_EXCEEDED
+        : constants.MODMAIL_LENGTH_EXCEEDED,
     });
 
   await previewMessage.edit({
@@ -223,33 +244,48 @@ async function updateModmail(client: Client, activeMessages: Map<string, ActiveM
   });
 }
 
-async function execute(client: Client, activeMessages: Map<string, ActiveModmail>, message: Message) {
+async function execute(
+  client: Client,
+  activeMessages: Map<string, ActiveModmail>,
+  message: Message
+) {
   if (message.channel.type !== "DM" || message.author.bot) return;
 
   if (message.content.startsWith(constants.MODMAIL_COMMAND)) {
-      if (activeMessages.has(message.author.id)) {
-          const { previewId, timeoutHandle } = activeMessages.get(message.author.id) ?? { previewId: "", timeoutHandle: 0 };
-          activeMessages.delete(message.author.id);
+    if (activeMessages.has(message.author.id)) {
+      const { previewId, timeoutHandle } = activeMessages.get(
+        message.author.id
+      ) ?? { previewId: "", timeoutHandle: 0 };
+      activeMessages.delete(message.author.id);
 
-          // send cancellation message and remove buttons
-          const previewMessage = await message.channel.messages.fetch(previewId);
-          const previewEmbed = previewMessage.embeds[0];
+      // send cancellation message and remove buttons
+      const previewMessage = await message.channel.messages.fetch(previewId);
+      const previewEmbed = previewMessage.embeds[0];
 
-          const newPreviewEmbed = new MessageEmbed(previewEmbed)
-              .setFooter({ text: (previewEmbed.footer ? previewEmbed.footer.text : '') + '\n' + '(canceled)' })
-              .setTimestamp();
+      const newPreviewEmbed = new MessageEmbed(previewEmbed)
+        .setFooter({
+          text:
+            (previewEmbed.footer ? previewEmbed.footer.text : "") +
+            "\n" +
+            "(canceled)",
+        })
+        .setTimestamp();
 
-          message.channel.send({ embeds: [constants.MODMAIL_CANCELED_NEW] }).catch(console.error);
-          previewMessage.edit({ embeds: [newPreviewEmbed], components: [] }).catch(console.error);
+      message.channel
+        .send({ embeds: [constants.MODMAIL_CANCELED_NEW] })
+        .catch(console.error);
+      previewMessage
+        .edit({ embeds: [newPreviewEmbed], components: [] })
+        .catch(console.error);
 
-          // clear timeout
-          clearTimeout(timeoutHandle);
-      }
-      await newModmail(client, activeMessages, message);
+      // clear timeout
+      clearTimeout(timeoutHandle);
+    }
+    await newModmail(client, activeMessages, message);
   } else if (activeMessages.has(message.author.id)) {
-      await updateModmail(client, activeMessages, message);
+    await updateModmail(client, activeMessages, message);
   } else {
-      await message.channel.send({ embeds: [constants.INTRO] });
+    await message.channel.send({ embeds: [constants.INTRO] });
   }
 }
 

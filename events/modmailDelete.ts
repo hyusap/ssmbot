@@ -1,18 +1,26 @@
-import { MessageEmbed } from "discord.js";
-import { previewContent, cancellationTimeout } from "./modmail.js";
+import { Client, Message, MessageEmbed } from "discord.js";
+import { DiscordEvent } from "../types/event.js";
+import {
+  previewContent,
+  cancellationTimeout,
+  ActiveModmail,
+} from "./modmail.js";
 
 export const name = "messageDelete";
-export async function execute(client, activeMessages, message) {
+export async function execute(
+  client: Client,
+  activeMessages: Map<string, ActiveModmail>,
+  message: Message
+) {
   if (message.channel.type !== "DM" || message.author.bot) return;
 
   // return if a modmail is not active for this user
-  if (!activeMessages.has(message.author.id)) return;
+  const currentMessage = activeMessages.get(message.author.id);
+  if (!currentMessage) return;
 
   // load message content and preview
-  const { modmailContent, previewId, timeoutHandle } = activeMessages.get(
-    message.author.id
-  );
 
+  const { modmailContent, previewId, timeoutHandle } = currentMessage;
   // edit the modmail content to include the new changes
   const newModmailContent = modmailContent.replace(message.content, "");
 
@@ -41,3 +49,11 @@ export async function execute(client, activeMessages, message) {
     timeoutHandle: newTimeoutHandle,
   });
 }
+
+const modmailDelete: DiscordEvent = {
+  name: "messageDelete",
+  once: false,
+  execute,
+};
+
+export default modmailDelete;
