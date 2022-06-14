@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { DiscordEvent } from "./types/event";
 import { SlashCommand } from "./types/slashCommand";
 import { ActiveModmail } from "./events/modmail";
+import { globalState } from "./state";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,9 +18,6 @@ declare module "discord.js" {
     commands: Collection<unknown, any>;
   }
 }
-
-// Map's user ID to the active modmail ID and embed if there is one
-const activeMessages: Map<string, ActiveModmail> = new Map();
 
 const client = new Client({
   intents: [
@@ -34,8 +32,8 @@ client.commands = new Collection();
 
 // Set command handling
 const commandsPath = join(__dirname, "commands");
-const commandFiles = readdirSync(commandsPath).filter((file) =>
-  file.endsWith(".ts")
+const commandFiles = readdirSync(commandsPath).filter(
+  (file) => file.endsWith(".ts") || file.endsWith(".js")
 );
 
 for (const file of commandFiles) {
@@ -47,8 +45,8 @@ for (const file of commandFiles) {
 
 // Set event handling
 const eventsPath = join(__dirname, "events");
-const eventFiles = readdirSync(eventsPath).filter((file) =>
-  file.endsWith(".ts")
+const eventFiles = readdirSync(eventsPath).filter(
+  (file) => file.endsWith(".ts") || file.endsWith(".js")
 );
 
 for (const file of eventFiles) {
@@ -56,10 +54,12 @@ for (const file of eventFiles) {
   const eventComplete = await import(filePath);
   const event: DiscordEvent = eventComplete.default;
   if (event.once) {
-    client.once(event.name, (...args) => event.execute(client, ...args));
+    client.once(event.name, (...args) =>
+      event.execute(client, globalState, ...args)
+    );
   } else {
     client.on(event.name, (...args) =>
-      event.execute(client, activeMessages, ...args)
+      event.execute(client, globalState, ...args)
     );
   }
 }

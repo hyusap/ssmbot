@@ -16,62 +16,59 @@ const constants = {
     ),
 };
 
-export const name = "messageUpdate";
-export async function execute(
-  client: Client,
-  activeMessages: Map<string, ActiveModmail>,
-  oldMessage: Message,
-  newMessage: Message
-) {
-  if (oldMessage.channel.type !== "DM" || oldMessage.author.bot) return;
-
-  // return if a modmail is not active for this user
-  const oldMessageObject = activeMessages.get(oldMessage.author.id);
-  if (!oldMessageObject) return;
-
-  // load message content and preview
-  const { modmailContent, previewId, timeoutHandle } = oldMessageObject;
-
-  // edit the modmail content to include the new changes and handle the edit being too long
-  const newModmailContent = modmailContent.replace(
-    oldMessage.content,
-    newMessage.content
-  );
-  if (newModmailContent.length > 4096) {
-    await oldMessage.channel.send({ embeds: [constants.EDIT_TOO_LONG] });
-    return;
-  }
-
-  const previewMessage = await oldMessage.channel.messages.fetch(previewId);
-  const previewEmbed = previewMessage.embeds[0];
-
-  const newPreviewEmbed = new MessageEmbed(previewEmbed)
-    .setDescription(previewContent(newModmailContent))
-    .setTimestamp();
-
-  await previewMessage.edit({ embeds: [newPreviewEmbed] });
-
-  // renew timeout
-  clearTimeout(timeoutHandle);
-  const newTimeoutHandle = cancellationTimeout(
-    activeMessages,
-    oldMessage.author.id,
-    oldMessage.channel,
-    previewMessage
-  );
-
-  // update activeMessages
-  activeMessages.set(oldMessage.author.id, {
-    modmailContent: newModmailContent,
-    previewId: previewMessage.id,
-    timeoutHandle: newTimeoutHandle,
-  });
-}
-
 const modmailEdit: DiscordEvent = {
   name: "messageUpdate",
   once: false,
-  execute,
+  execute: async (
+    client,
+    { activeMessages },
+    oldMessage: Message,
+    newMessage: Message
+  ) => {
+    if (oldMessage.channel.type !== "DM" || oldMessage.author.bot) return;
+
+    // return if a modmail is not active for this user
+    const oldMessageObject = activeMessages.get(oldMessage.author.id);
+    if (!oldMessageObject) return;
+
+    // load message content and preview
+    const { modmailContent, previewId, timeoutHandle } = oldMessageObject;
+
+    // edit the modmail content to include the new changes and handle the edit being too long
+    const newModmailContent = modmailContent.replace(
+      oldMessage.content,
+      newMessage.content
+    );
+    if (newModmailContent.length > 4096) {
+      await oldMessage.channel.send({ embeds: [constants.EDIT_TOO_LONG] });
+      return;
+    }
+
+    const previewMessage = await oldMessage.channel.messages.fetch(previewId);
+    const previewEmbed = previewMessage.embeds[0];
+
+    const newPreviewEmbed = new MessageEmbed(previewEmbed)
+      .setDescription(previewContent(newModmailContent))
+      .setTimestamp();
+
+    await previewMessage.edit({ embeds: [newPreviewEmbed] });
+
+    // renew timeout
+    clearTimeout(timeoutHandle);
+    const newTimeoutHandle = cancellationTimeout(
+      activeMessages,
+      oldMessage.author.id,
+      oldMessage.channel,
+      previewMessage
+    );
+
+    // update activeMessages
+    activeMessages.set(oldMessage.author.id, {
+      modmailContent: newModmailContent,
+      previewId: previewMessage.id,
+      timeoutHandle: newTimeoutHandle,
+    });
+  },
 };
 
 export default modmailEdit;

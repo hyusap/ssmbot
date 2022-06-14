@@ -244,55 +244,48 @@ async function updateModmail(
   });
 }
 
-async function execute(
-  client: Client,
-  activeMessages: Map<string, ActiveModmail>,
-  message: Message
-) {
-  if (message.channel.type !== "DM" || message.author.bot) return;
-
-  if (message.content.startsWith(constants.MODMAIL_COMMAND)) {
-    if (activeMessages.has(message.author.id)) {
-      const { previewId, timeoutHandle } = activeMessages.get(
-        message.author.id
-      ) ?? { previewId: "", timeoutHandle: 0 };
-      activeMessages.delete(message.author.id);
-
-      // send cancellation message and remove buttons
-      const previewMessage = await message.channel.messages.fetch(previewId);
-      const previewEmbed = previewMessage.embeds[0];
-
-      const newPreviewEmbed = new MessageEmbed(previewEmbed)
-        .setFooter({
-          text:
-            (previewEmbed.footer ? previewEmbed.footer.text : "") +
-            "\n" +
-            "(canceled)",
-        })
-        .setTimestamp();
-
-      message.channel
-        .send({ embeds: [constants.MODMAIL_CANCELED_NEW] })
-        .catch(console.error);
-      previewMessage
-        .edit({ embeds: [newPreviewEmbed], components: [] })
-        .catch(console.error);
-
-      // clear timeout
-      clearTimeout(timeoutHandle);
-    }
-    await newModmail(client, activeMessages, message);
-  } else if (activeMessages.has(message.author.id)) {
-    await updateModmail(client, activeMessages, message);
-  } else {
-    await message.channel.send({ embeds: [constants.INTRO] });
-  }
-}
-
 const modmail: DiscordEvent = {
   name: "messageCreate",
   once: false,
-  execute,
+  execute: async (client, { activeMessages }, message: Message) => {
+    if (message.channel.type !== "DM" || message.author.bot) return;
+    if (message.content.startsWith(constants.MODMAIL_COMMAND)) {
+      if (activeMessages.has(message.author.id)) {
+        const { previewId, timeoutHandle } = activeMessages.get(
+          message.author.id
+        ) ?? { previewId: "", timeoutHandle: 0 };
+        activeMessages.delete(message.author.id);
+
+        // send cancellation message and remove buttons
+        const previewMessage = await message.channel.messages.fetch(previewId);
+        const previewEmbed = previewMessage.embeds[0];
+
+        const newPreviewEmbed = new MessageEmbed(previewEmbed)
+          .setFooter({
+            text:
+              (previewEmbed.footer ? previewEmbed.footer.text : "") +
+              "\n" +
+              "(canceled)",
+          })
+          .setTimestamp();
+
+        message.channel
+          .send({ embeds: [constants.MODMAIL_CANCELED_NEW] })
+          .catch(console.error);
+        previewMessage
+          .edit({ embeds: [newPreviewEmbed], components: [] })
+          .catch(console.error);
+
+        // clear timeout
+        clearTimeout(timeoutHandle);
+      }
+      await newModmail(client, activeMessages, message);
+    } else if (activeMessages.has(message.author.id)) {
+      await updateModmail(client, activeMessages, message);
+    } else {
+      await message.channel.send({ embeds: [constants.INTRO] });
+    }
+  },
 };
 
 export default modmail;
