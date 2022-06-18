@@ -10,6 +10,8 @@ RUN yarn install
 
 COPY . .
 
+RUN yarn build
+
 RUN yarn register
 
 EXPOSE 8080

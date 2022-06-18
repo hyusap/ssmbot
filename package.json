@@ -25,7 +25,7 @@
   },
   "scripts": {
     "register": "node dist/deploy-commands.js",
-    "start": "node dist/index.js",
+    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' node dist/index.js",
     "dev": "nodemon -e js,ts,json, index.ts",
     "build": "tsc -p ."
   }
