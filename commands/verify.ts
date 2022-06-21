@@ -40,7 +40,7 @@ const verify: SlashCommand = {
   async execute(interaction: CommandInteraction) {
     if (interaction.options.getSubcommand() === "email") {
       const email: string = interaction.options.getString("email")!;
-      const emailRegex = /[A-Za-z]+(22|23|24)[A-Za-z]+@ncssm\.edu/;
+      const emailRegex = /[A-Za-z]+(22|23|24)[A-Za-z0-9]+@ncssm\.edu/;
       if (emailRegex.test(email)) {
         await interaction.deferReply();
 
