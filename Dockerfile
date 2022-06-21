@@ -10,7 +10,5 @@ RUN yarn install
 
 COPY . .
 
-RUN yarn register
-
 EXPOSE 8080
 CMD ["yarn", "start"]
