@@ -43,6 +43,12 @@ jobs:
           cosign-release: 'v1.7.1'
           
           
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3.3.0
+        
+      - name: yarn install
+        run: yarn install
+          
       - name: Typescript compiler
         uses: iCrawl/action-tsc@v1
 
