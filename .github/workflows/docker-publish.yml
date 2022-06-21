@@ -41,6 +41,11 @@ jobs:
         uses: sigstore/cosign-installer@d6a3abf1bdea83574e28d40543793018b6035605
         with:
           cosign-release: 'v1.7.1'
+          
+          
+      - name: Typescript compiler
+        uses: iCrawl/action-tsc@v1
+
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
