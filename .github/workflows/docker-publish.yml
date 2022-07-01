@@ -49,8 +49,8 @@ jobs:
       - name: yarn install
         run: yarn install
           
-      - name: Typescript compiler
-        uses: iCrawl/action-tsc@v1
+      - name: yarn build
+        run: yarn build
 
       
       - name: Set up QEMU
