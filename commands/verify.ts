@@ -59,7 +59,7 @@ const verify: SlashCommand = {
         });
 
         await transporter.sendMail({
-          from: '"NCSSM Discord" <ncssmdiscord@outlook.com>',
+          from: `"NCSSM Discord" <${process.env.EMAIL_SENDER}>`,
           to: email,
           subject: "Verification Email",
           text: `Welcome to the NCSSM Discord Server! Here is your verification code: ${hash}. Please use the command "/verify code code:${hash}" in the verification channel to verify your account.`,
