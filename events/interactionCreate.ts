@@ -44,6 +44,65 @@ const interactionCreate: DiscordEvent = {
   once: false,
   execute: async (client, { activeMessages }, interaction: Interaction) => {
     if (interaction.isButton()) {
+      console.log("Button pressed");
+      if (interaction.customId === "subserver-verify") {
+        console.log("subserver verify");
+        await client.guilds.fetch();
+        const guild = client.guilds.cache.get(process.env.SERVER_ID ?? "");
+        const member = guild?.members.cache.get(interaction.user.id);
+        const subserverrole = interaction.guild?.roles.cache
+          .filter((role) => {
+            return role.name === "Verified";
+          })
+          .first();
+        if (member) {
+          if (member.roles.cache.has(process.env.VERIFIED_ROLE_ID ?? "")) {
+            if (subserverrole) {
+              await member.roles.add(subserverrole);
+              await interaction.reply({
+                embeds: [
+                  {
+                    title: "Verification Successful",
+                    description: "You have been verified in the subserver.",
+                    color: "#00ff00",
+                  },
+                ],
+              });
+            } else {
+              await interaction.reply({
+                embeds: [
+                  {
+                    title: "Verification Failed",
+                    description: "The subserver role was not found.",
+                    color: "#ff0000",
+                  },
+                ],
+              });
+            }
+          } else {
+            await interaction.reply({
+              embeds: [
+                {
+                  title: "Verification Failed",
+                  description: "You must be verified in the main server.",
+                  color: "#ff0000",
+                },
+              ],
+            });
+          }
+        } else {
+          await interaction.reply({
+            embeds: [
+              {
+                title: "Verification Failed",
+                description: "You must be a member of the main server.",
+                color: "#ff0000",
+              },
+            ],
+          });
+        }
+        return;
+      }
       // check that the modmail is still active
       if (!activeMessages.has(interaction.user.id)) {
         await interaction.deferUpdate();

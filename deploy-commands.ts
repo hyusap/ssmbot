@@ -5,13 +5,13 @@ import "dotenv/config";
 
 if (process.env.CLIENT_ID && process.env.TOKEN && process.env.SERVER_ID) {
   const commands = [];
-  const commandFiles = readdirSync("./commands").filter((file) =>
-    file.endsWith(".js")
+  const commandFiles = readdirSync("./commands").filter(
+    (file) => file.endsWith(".js") || file.endsWith(".ts")
   );
 
   for (const file of commandFiles) {
     const command = await import(`./commands/${file}`);
-    commands.push(command.data.toJSON());
+    commands.push(command.default.data.toJSON());
   }
 
   const rest = new REST({ version: "9" }).setToken(process.env.TOKEN);
