@@ -67,6 +67,7 @@ const interactionCreate: DiscordEvent = {
                     color: "#00ff00",
                   },
                 ],
+                ephemeral: true,
               });
             } else {
               await interaction.reply({
@@ -77,6 +78,7 @@ const interactionCreate: DiscordEvent = {
                     color: "#ff0000",
                   },
                 ],
+                ephemeral: true,
               });
             }
           } else {
@@ -88,6 +90,7 @@ const interactionCreate: DiscordEvent = {
                   color: "#ff0000",
                 },
               ],
+              ephemeral: true,
             });
           }
         } else {
@@ -99,6 +102,7 @@ const interactionCreate: DiscordEvent = {
                 color: "#ff0000",
               },
             ],
+            ephemeral: true,
           });
         }
         return;
