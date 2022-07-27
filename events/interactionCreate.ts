@@ -1,4 +1,10 @@
-import { Client, Interaction, MessageEmbed, TextChannel } from "discord.js";
+import {
+  Client,
+  GuildMemberRoleManager,
+  Interaction,
+  MessageEmbed,
+  TextChannel,
+} from "discord.js";
 import { DiscordEvent } from "../types/event";
 import { chunkSubstr } from "../util.js";
 import { ActiveModmail } from "./modmail";
@@ -62,7 +68,8 @@ const interactionCreate: DiscordEvent = {
         if (member) {
           if (member.roles.cache.has(process.env.VERIFIED_ROLE_ID ?? "")) {
             if (subserverrole) {
-              await member.roles.add(subserverrole);
+              const roles = interaction.member?.roles as GuildMemberRoleManager;
+              await roles.add(subserverrole);
 
               await interaction.reply({
                 embeds: [
