@@ -47,18 +47,23 @@ const interactionCreate: DiscordEvent = {
       console.log("Button pressed");
       if (interaction.customId === "subserver-verify") {
         console.log("subserver verify");
-        await client.guilds.fetch();
+        client.guilds.fetch();
         const guild = client.guilds.cache.get(process.env.SERVER_ID ?? "");
+        guild?.members.fetch();
         const member = guild?.members.cache.get(interaction.user.id);
+        interaction.guild?.roles.fetch();
+
         const subserverrole = interaction.guild?.roles.cache
           .filter((role) => {
             return role.name === "Verified";
           })
           .first();
+
         if (member) {
           if (member.roles.cache.has(process.env.VERIFIED_ROLE_ID ?? "")) {
             if (subserverrole) {
               await member.roles.add(subserverrole);
+
               await interaction.reply({
                 embeds: [
                   {
@@ -69,6 +74,7 @@ const interactionCreate: DiscordEvent = {
                 ],
                 ephemeral: true,
               });
+              console.log("subverification successful");
             } else {
               await interaction.reply({
                 embeds: [
@@ -80,6 +86,7 @@ const interactionCreate: DiscordEvent = {
                 ],
                 ephemeral: true,
               });
+              console.log("subverification role not found");
             }
           } else {
             await interaction.reply({
@@ -92,6 +99,7 @@ const interactionCreate: DiscordEvent = {
               ],
               ephemeral: true,
             });
+            console.log("subverification not verified");
           }
         } else {
           await interaction.reply({
@@ -104,6 +112,7 @@ const interactionCreate: DiscordEvent = {
             ],
             ephemeral: true,
           });
+          console.log("subverification not member");
         }
         return;
       }
